@@ -1,43 +1,67 @@
-const REGISTRY_URL =
-  'https://raw.githubusercontent.com/boxclawai/skills/main/registry.json';
+const BASE_URL =
+  'https://raw.githubusercontent.com/boxclawai/skills/main';
 
-let cache = null;
+const REGISTRY_URLS = {
+  skill: `${BASE_URL}/registry.json`,
+  mcp: `${BASE_URL}/mcp-registry.json`,
+  rag: `${BASE_URL}/rag-registry.json`,
+};
 
-export async function fetchRegistry() {
-  if (cache) return cache;
+const cache = {};
 
-  const res = await fetch(REGISTRY_URL);
+export async function fetchRegistry(type = 'skill') {
+  if (cache[type]) return cache[type];
+
+  const url = REGISTRY_URLS[type];
+  if (!url) throw new Error(`Unknown type: ${type}`);
+
+  const res = await fetch(url);
   if (!res.ok) {
-    throw new Error(`Failed to fetch skill registry (HTTP ${res.status})`);
+    throw new Error(`Failed to fetch ${type} registry (HTTP ${res.status})`);
   }
-  cache = await res.json();
-  return cache;
+  cache[type] = await res.json();
+  return cache[type];
 }
 
-export async function getSkillNames() {
-  const registry = await fetchRegistry();
-  return Object.keys(registry.skills);
+export async function getItemNames(type = 'skill') {
+  const registry = await fetchRegistry(type);
+  const collection = registry.skills || registry.servers || registry.templates;
+  return Object.keys(collection);
 }
 
-export async function getSkillInfo(name) {
-  const registry = await fetchRegistry();
-  return registry.skills[name] || null;
+export async function getItemInfo(type, name) {
+  const registry = await fetchRegistry(type);
+  const collection = registry.skills || registry.servers || registry.templates;
+  return collection[name] || null;
 }
 
-export async function searchSkills(query) {
-  const registry = await fetchRegistry();
+export async function searchItems(type, query) {
+  const registry = await fetchRegistry(type);
+  const collection = registry.skills || registry.servers || registry.templates;
   const q = query.toLowerCase();
 
-  return Object.values(registry.skills).filter((skill) => {
+  return Object.values(collection).filter((item) => {
     return (
-      skill.name.toLowerCase().includes(q) ||
-      skill.role.toLowerCase().includes(q) ||
-      skill.description.toLowerCase().includes(q) ||
-      skill.tags.some((t) => t.toLowerCase().includes(q))
+      item.name.toLowerCase().includes(q) ||
+      (item.role || item.description || '').toLowerCase().includes(q) ||
+      item.description.toLowerCase().includes(q) ||
+      (item.tags || []).some((t) => t.toLowerCase().includes(q))
     );
   });
 }
 
+export async function searchAll(query) {
+  const results = {};
+  for (const type of ['skill', 'mcp', 'rag']) {
+    try {
+      results[type] = await searchItems(type, query);
+    } catch {
+      results[type] = [];
+    }
+  }
+  return results;
+}
+
 export function clearCache() {
-  cache = null;
+  for (const key of Object.keys(cache)) delete cache[key];
 }

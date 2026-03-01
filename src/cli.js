@@ -1,6 +1,8 @@
 import { Command } from 'commander';
-import { installCommand } from './commands/install.js';
-import { uninstallCommand } from './commands/uninstall.js';
+import { installSkill } from './commands/install.js';
+import { installMcp } from './commands/install-mcp.js';
+import { installRag } from './commands/install-rag.js';
+import { uninstallSkill, uninstallMcp, uninstallRag } from './commands/uninstall.js';
 import { listCommand } from './commands/list.js';
 import { searchCommand } from './commands/search.js';
 import { updateCommand } from './commands/update.js';
@@ -11,46 +13,73 @@ export function run() {
 
   program
     .name('boxclaw')
-    .description('Install production-grade AI agent skills into any project')
-    .version('1.0.0');
+    .description('Install AI agent skills, MCP servers, and RAG templates into any project')
+    .version('1.1.0');
 
-  // boxclaw install skill <name>
+  // --- install ---
   const install = program.command('install');
+
   install
     .command('skill <name>')
     .description('Install a skill into .skills/<name>/')
     .option('-f, --force', 'Overwrite if already installed')
-    .action(installCommand);
+    .action(installSkill);
 
-  // boxclaw uninstall skill <name>
+  install
+    .command('mcp <name>')
+    .description('Configure an MCP server in your AI agent')
+    .option('-f, --force', 'Overwrite if already configured')
+    .action(installMcp);
+
+  install
+    .command('rag <name>')
+    .description('Install a RAG template into .rag/<name>/')
+    .option('-f, --force', 'Overwrite if already installed')
+    .action(installRag);
+
+  // --- uninstall ---
   const uninstall = program.command('uninstall');
+
   uninstall
     .command('skill <name>')
     .description('Remove an installed skill')
-    .action(uninstallCommand);
+    .action(uninstallSkill);
 
-  // boxclaw list
+  uninstall
+    .command('mcp <name>')
+    .description('Remove an MCP server configuration')
+    .action(uninstallMcp);
+
+  uninstall
+    .command('rag <name>')
+    .description('Remove an installed RAG template')
+    .action(uninstallRag);
+
+  // --- list ---
   program
     .command('list')
-    .description('List all available and installed skills')
+    .description('List all available and installed resources')
+    .option('-t, --type <type>', 'Filter by type: skill, mcp, rag', 'all')
     .action(listCommand);
 
-  // boxclaw search <query>
+  // --- search ---
   program
     .command('search <query>')
-    .description('Search skills by keyword, tag, or role')
+    .description('Search by keyword, tag, or description')
+    .option('-t, --type <type>', 'Filter by type: skill, mcp, rag')
     .action(searchCommand);
 
-  // boxclaw update [name]
+  // --- update ---
   program
     .command('update [name]')
-    .description('Update one or all installed skills')
+    .description('Update one or all installed resources')
+    .option('-t, --type <type>', 'Resource type: skill, mcp, rag', 'skill')
     .action(updateCommand);
 
-  // boxclaw init
+  // --- init ---
   program
     .command('init')
-    .description('Initialize .skills/ directory and configure your AI agent')
+    .description('Initialize project and configure your AI agent')
     .action(initCommand);
 
   program.parse();

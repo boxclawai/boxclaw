@@ -3,7 +3,7 @@ import { mkdir, readFile, writeFile, appendFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { createInterface } from 'node:readline';
-import { getSkillsDir, writeManifest, readManifest } from '../config.js';
+import { getTypeDir, writeManifest, readManifest } from '../config.js';
 import { log } from '../utils.js';
 
 function prompt(question) {
@@ -60,19 +60,19 @@ export async function initCommand() {
   console.log(pc.bold('  BoxClaw Skills — Project Setup'));
   console.log('');
 
-  // Create .skills directory
-  const skillsDir = getSkillsDir();
-  if (!existsSync(skillsDir)) {
-    await mkdir(skillsDir, { recursive: true });
-    log.success('Created .skills/ directory');
-  } else {
-    log.dim('.skills/ directory already exists');
+  // Create directories
+  for (const type of ['skill', 'mcp', 'rag']) {
+    const dir = getTypeDir(type);
+    if (!existsSync(dir)) {
+      await mkdir(dir, { recursive: true });
+    }
   }
+  log.success('Created .skills/, .mcp/, .rag/ directories');
 
   // Create manifest
   const manifest = await readManifest();
   await writeManifest(manifest);
-  log.success('Initialized .skills/.boxclaw.json manifest');
+  log.success('Initialized .boxclaw.json manifest');
 
   // Ask which agent
   console.log('');
@@ -96,7 +96,7 @@ export async function initCommand() {
   }
 
   const agent = AGENT_CONFIGS[choice];
-  const installedSkills = Object.keys(manifest.installed);
+  const installedSkills = Object.keys(manifest.skill || {});
 
   // Generate config
   const configPath = join(process.cwd(), agent.file);

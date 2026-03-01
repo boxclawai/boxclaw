@@ -1,13 +1,15 @@
 # boxclaw
 
-Install production-grade AI agent skills into any project.
+Install AI agent skills, MCP servers, and RAG templates into any project.
 
 ```bash
 npm install -g boxclaw
 boxclaw install skill devops-engineer
+boxclaw install mcp github
+boxclaw install rag codebase-rag
 ```
 
-BoxClaw downloads expert skill modules from the [BoxClaw Skills](https://github.com/boxclawai/skills) catalog and installs them into your project's `.skills/` directory. Your AI coding agent (Claude Code, Cursor, Windsurf, Cline) can then use these skills for expert-level guidance.
+BoxClaw downloads expert modules from the [BoxClaw Skills](https://github.com/boxclawai/skills) catalog and installs them into your project. Your AI coding agent (Claude Code, Cursor, Windsurf, Cline) can then use these for expert-level guidance.
 
 ## Install
 
@@ -19,64 +21,73 @@ Requires Node.js 18+.
 
 ## Commands
 
-### `boxclaw install skill <name>`
+### Skills
 
-Download and install a skill into `.skills/<name>/`.
+Install production-grade AI agent skills into `.skills/<name>/`.
 
 ```bash
 boxclaw install skill frontend-developer
-boxclaw install skill devops-engineer
-boxclaw install skill security-engineer --force   # reinstall
-```
-
-### `boxclaw uninstall skill <name>`
-
-Remove an installed skill.
-
-```bash
+boxclaw install skill devops-engineer --force   # reinstall
 boxclaw uninstall skill frontend-developer
 ```
 
-### `boxclaw list`
+Each skill includes expert instructions (SKILL.md), reference documents, and automation scripts.
 
-Show all 13 available skills and which ones are installed.
+### MCP Servers
 
-```
-     Skill                   Role                    Status
-     frontend-developer      Frontend Developer      installed
-     backend-developer       Backend Developer       available
-     devops-engineer         DevOps Engineer         installed
-     ...
-```
-
-### `boxclaw search <query>`
-
-Search skills by keyword, tag, or role.
+Configure Model Context Protocol servers in your AI agent's config.
 
 ```bash
-boxclaw search react          # finds frontend-developer, fullstack-developer
-boxclaw search kubernetes     # finds devops-engineer
-boxclaw search testing        # finds qa-test-engineer
+boxclaw install mcp github
+boxclaw install mcp postgres
+boxclaw uninstall mcp github
 ```
 
-### `boxclaw update [name]`
+MCP servers are auto-configured in your agent's settings file (Claude Code, Cursor, etc).
 
-Update one or all installed skills to the latest version.
+### RAG Templates
+
+Download ready-to-use RAG pipeline templates into `.rag/<name>/`.
 
 ```bash
-boxclaw update                        # update all
-boxclaw update frontend-developer     # update one
+boxclaw install rag codebase-rag
+boxclaw install rag docs-rag
+boxclaw uninstall rag docs-rag
 ```
 
-### `boxclaw init`
+Each template includes Python code, config, and setup instructions.
 
-Initialize `.skills/` directory and configure your AI agent. Supports Claude Code, Cursor, Windsurf, and Cline.
+### List & Search
+
+```bash
+boxclaw list                    # show all types
+boxclaw list --type skill       # skills only
+boxclaw list --type mcp         # MCP servers only
+boxclaw list --type rag         # RAG templates only
+
+boxclaw search react            # search across all types
+boxclaw search database         # finds skills + MCP servers
+boxclaw search --type skill kubernetes
+```
+
+### Update
+
+```bash
+boxclaw update                          # update all skills
+boxclaw update frontend-developer       # update one skill
+boxclaw update --type rag               # update all RAG templates
+boxclaw update --type mcp github        # update one MCP server
+```
+
+### Init
+
+Initialize project directories and configure your AI agent.
 
 ```bash
 boxclaw init
 ```
 
-This creates the `.skills/` directory, a manifest file, and generates the appropriate configuration file for your agent (CLAUDE.md, .cursorrules, .windsurfrules, or .clinerules).
+Creates `.skills/`, `.mcp/`, `.rag/` directories, a `.boxclaw.json` manifest, and generates the appropriate config file for your agent (CLAUDE.md, .cursorrules, .windsurfrules, or .clinerules).
 
 ## Available Skills
 
@@ -96,7 +107,28 @@ This creates the `.skills/` directory, a manifest file, and generates the approp
 | 🗄️ | database-administrator | Database Administrator |
 | ☁️ | cloud-architect | Cloud Architect |
 
-Each skill includes expert instructions (SKILL.md), deep reference documents, and automation scripts. See the [skills repo](https://github.com/boxclawai/skills) for details.
+## Available MCP Servers
+
+| Emoji | Server | Description |
+|:-----:|--------|-------------|
+| 📁 | filesystem | Read, write, and manage local files |
+| 🐙 | github | Access GitHub repos, issues, PRs |
+| 🐘 | postgres | Query PostgreSQL databases |
+| 📦 | sqlite | Query SQLite databases |
+| 🧠 | memory | Persistent memory with knowledge graph |
+| 🌐 | fetch | Fetch and extract web content |
+| 🎭 | puppeteer | Browser automation with Puppeteer |
+| 🔍 | brave-search | Web search using Brave Search API |
+| 💬 | slack | Read and send Slack messages |
+| 💭 | sequential-thinking | Structured sequential thinking |
+
+## Available RAG Templates
+
+| Emoji | Template | Stack |
+|:-----:|----------|-------|
+| 💻 | codebase-rag | Python, ChromaDB, OpenAI Embeddings |
+| 📖 | docs-rag | Python, FAISS, LangChain |
+| 📄 | pdf-rag | Python, PyPDF2, ChromaDB, LangChain |
 
 ## How It Works
 
@@ -105,20 +137,31 @@ boxclaw install skill devops-engineer
         │
         ▼
 ┌──────────────────────────────┐
-│  Fetch registry.json         │  ← skill catalog from GitHub
-│  Download skills tarball     │  ← single .tar.gz download
-│  Extract devops-engineer/    │  ← only the requested skill
-│  Save to .skills/            │  ← your project directory
+│  Fetch registry              │  ← catalog from GitHub
+│  Download tarball            │  ← single .tar.gz download
+│  Extract requested item      │  ← only what you need
+│  Save to project directory   │  ← .skills/, .mcp/, or .rag/
 │  Update manifest             │  ← track what's installed
 └──────────────────────────────┘
-        │
-        ▼
+```
+
+## Project Structure
+
+```
 your-project/
-└── .skills/
-    └── devops-engineer/
-        ├── SKILL.md            ← expert instructions
-        ├── references/         ← deep-dive documents
-        └── scripts/            ← automation tools
+├── .boxclaw.json              ← manifest (tracks installed items)
+├── .skills/
+│   └── devops-engineer/
+│       ├── SKILL.md           ← expert instructions
+│       ├── references/        ← deep-dive documents
+│       └── scripts/           ← automation tools
+├── .mcp/                      ← MCP configs (managed in agent settings)
+└── .rag/
+    └── codebase-rag/
+        ├── config.py          ← configuration
+        ├── index.py           ← build embeddings index
+        ├── query.py           ← search your codebase
+        └── requirements.txt   ← Python dependencies
 ```
 
 ## License
