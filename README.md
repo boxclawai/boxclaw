@@ -9,7 +9,7 @@ boxclaw install mcp github
 boxclaw install rag codebase-rag
 ```
 
-BoxClaw downloads expert modules from the [BoxClaw Skills](https://github.com/boxclawai/skills) catalog and installs them into your project. Your AI coding agent (Claude Code, Cursor, Windsurf, Cline) can then use these for expert-level guidance.
+BoxClaw downloads expert modules from the [BoxClaw Skills](https://github.com/boxclawai/skills) catalog and installs them into your project. Your AI coding agent (Claude Code, Cursor, Windsurf, Cline, Antigravity, OpenClaw) can then use these for expert-level guidance.
 
 ## Install
 
@@ -87,7 +87,7 @@ Initialize project directories and configure your AI agent.
 boxclaw init
 ```
 
-Creates `.skills/`, `.mcp/`, `.rag/` directories, a `.boxclaw.json` manifest, and generates the appropriate config file for your agent (CLAUDE.md, .cursorrules, .windsurfrules, or .clinerules).
+Creates `.skills/`, `.mcp/`, `.rag/` directories, a `.boxclaw.json` manifest, and generates the appropriate config file for your agent. Supports Claude Code, Cursor, Windsurf, Cline, Antigravity, and OpenClaw.
 
 ## Available Skills
 

@@ -53,6 +53,17 @@ Automation scripts are in each skill's \`scripts/\` directory.
     template: (skills) =>
       `You are a senior developer. Follow the expert patterns from BoxClaw Skills.\n\nInstalled skills:\n${skills.map((s) => `- .skills/${s}/SKILL.md`).join('\n')}\n\nRead the relevant SKILL.md based on the current task and follow its patterns.\n`,
   },
+  '5': {
+    name: 'Antigravity',
+    file: '.antigravityrules',
+    template: (skills) =>
+      `You are a senior developer. Follow the expert patterns from BoxClaw Skills.\n\nInstalled skills:\n${skills.map((s) => `- .skills/${s}/SKILL.md`).join('\n')}\n\nRead the relevant SKILL.md based on the current task and follow its patterns.\nReference documents: .skills/<skill>/references/\nAutomation scripts: .skills/<skill>/scripts/\n`,
+  },
+  '6': {
+    name: 'OpenClaw',
+    file: null, // OpenClaw reads skills directly from the directory
+    template: null,
+  },
 };
 
 export async function initCommand() {
@@ -82,12 +93,14 @@ export async function initCommand() {
   console.log('  2) Cursor');
   console.log('  3) Windsurf');
   console.log('  4) Cline');
-  console.log('  5) Skip (configure manually)');
+  console.log('  5) Antigravity');
+  console.log('  6) OpenClaw');
+  console.log('  7) Skip (configure manually)');
   console.log('');
 
-  const choice = await prompt('  Select (1-5): ');
+  const choice = await prompt('  Select (1-7): ');
 
-  if (choice === '5' || !AGENT_CONFIGS[choice]) {
+  if (choice === '7' || !AGENT_CONFIGS[choice]) {
     console.log('');
     log.info('Skipped agent configuration');
     log.dim('Install skills with: boxclaw install skill <name>');
@@ -97,6 +110,26 @@ export async function initCommand() {
 
   const agent = AGENT_CONFIGS[choice];
   const installedSkills = Object.keys(manifest.skill || {});
+
+  // OpenClaw reads SKILL.md directly — just needs skills.load.extraDirs config
+  if (choice === '6') {
+    console.log('');
+    log.success('BoxClaw skills are compatible with OpenClaw out of the box');
+    console.log('');
+    log.info('Add this to your ~/.openclaw/openclaw.json:');
+    console.log('');
+    log.dim('  "skills": {');
+    log.dim('    "load": {');
+    log.dim(`      "extraDirs": ["${join(process.cwd(), '.skills')}"]`);
+    log.dim('    }');
+    log.dim('  }');
+    console.log('');
+    log.info('Next steps:');
+    log.dim('  1. Install skills:  boxclaw install skill frontend-developer');
+    log.dim('  2. OpenClaw will auto-detect SKILL.md files from .skills/');
+    console.log('');
+    return;
+  }
 
   // Generate config
   const configPath = join(process.cwd(), agent.file);
