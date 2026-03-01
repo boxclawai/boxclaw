@@ -4,7 +4,7 @@ import { getItemInfo } from '../registry.js';
 import { downloadFromTarball } from '../downloader.js';
 import { getItemPath, getTypeDir, addToManifest, isInstalled } from '../config.js';
 import { log } from '../utils.js';
-import { mkdir } from 'node:fs/promises';
+import { mkdir, rm } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 
 export async function installRag(name, options) {
@@ -40,18 +40,19 @@ export async function installRag(name, options) {
   try {
     // RAG templates stored in rags/<name> directory in the skills repo
     await downloadFromTarball(`rags/${name}`, destDir);
+    await addToManifest('rag', name, info.version || '1.0.0');
   } catch (err) {
+    // Clean up partial download
+    await rm(destDir, { recursive: true, force: true }).catch(() => {});
     spinner.fail('Download failed');
     log.error(err.message);
     process.exit(1);
   }
 
-  await addToManifest('rag', name, info.version || '1.0.0');
-
   spinner.succeed(`Installed RAG template ${info.emoji || '📚'} ${pc.bold(info.name)}`);
   console.log('');
   log.dim(`  Location:    .rag/${name}/`);
-  log.dim(`  Description: ${info.description}`);
+  log.dim(`  Description: ${info.description || ''}`);
 
   if (info.setup) {
     console.log('');

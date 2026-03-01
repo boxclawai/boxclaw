@@ -42,8 +42,12 @@ export async function readManifest(cwd = process.cwd()) {
   if (!existsSync(path)) {
     return { version: '1.0.0' };
   }
-  const data = await readFile(path, 'utf-8');
-  return JSON.parse(data);
+  try {
+    const data = await readFile(path, 'utf-8');
+    return JSON.parse(data);
+  } catch {
+    return { version: '1.0.0' };
+  }
 }
 
 export async function writeManifest(manifest, cwd = process.cwd()) {

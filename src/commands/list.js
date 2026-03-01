@@ -14,7 +14,7 @@ export async function listCommand(options) {
   for (const t of types) {
     try {
       const registry = await fetchRegistry(t);
-      const collection = registry.skills || registry.servers || registry.templates;
+      const collection = registry.skills || registry.servers || registry.templates || {};
       const installed = await getInstalled(t);
       const installedSet = new Set(Object.keys(installed));
 
@@ -42,7 +42,7 @@ export async function listCommand(options) {
   spinner.stop();
 
   if (sections.length === 0) {
-    log.warn('No registries available');
+    log.warn('Could not fetch registries. Check your network connection.');
     return;
   }
 

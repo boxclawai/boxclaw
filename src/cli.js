@@ -1,4 +1,7 @@
 import { Command } from 'commander';
+import { readFileSync } from 'node:fs';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { installSkill } from './commands/install.js';
 import { installMcp } from './commands/install-mcp.js';
 import { installRag } from './commands/install-rag.js';
@@ -7,6 +10,22 @@ import { listCommand } from './commands/list.js';
 import { searchCommand } from './commands/search.js';
 import { updateCommand } from './commands/update.js';
 import { initCommand } from './commands/init.js';
+import { validateName, log } from './utils.js';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const pkg = JSON.parse(readFileSync(join(__dirname, '..', 'package.json'), 'utf-8'));
+
+function withValidation(handler) {
+  return (name, options) => {
+    try {
+      validateName(name);
+    } catch (err) {
+      log.error(err.message);
+      process.exit(1);
+    }
+    return handler(name, options);
+  };
+}
 
 export function run() {
   const program = new Command();
@@ -14,7 +33,7 @@ export function run() {
   program
     .name('boxclaw')
     .description('Install AI agent skills, MCP servers, and RAG templates into any project')
-    .version('1.1.0');
+    .version(pkg.version);
 
   // --- install ---
   const install = program.command('install');
@@ -23,19 +42,19 @@ export function run() {
     .command('skill <name>')
     .description('Install a skill into .skills/<name>/')
     .option('-f, --force', 'Overwrite if already installed')
-    .action(installSkill);
+    .action(withValidation(installSkill));
 
   install
     .command('mcp <name>')
     .description('Configure an MCP server in your AI agent')
     .option('-f, --force', 'Overwrite if already configured')
-    .action(installMcp);
+    .action(withValidation(installMcp));
 
   install
     .command('rag <name>')
     .description('Install a RAG template into .rag/<name>/')
     .option('-f, --force', 'Overwrite if already installed')
-    .action(installRag);
+    .action(withValidation(installRag));
 
   // --- uninstall ---
   const uninstall = program.command('uninstall');
@@ -43,17 +62,17 @@ export function run() {
   uninstall
     .command('skill <name>')
     .description('Remove an installed skill')
-    .action(uninstallSkill);
+    .action(withValidation(uninstallSkill));
 
   uninstall
     .command('mcp <name>')
     .description('Remove an MCP server configuration')
-    .action(uninstallMcp);
+    .action(withValidation(uninstallMcp));
 
   uninstall
     .command('rag <name>')
     .description('Remove an installed RAG template')
-    .action(uninstallRag);
+    .action(withValidation(uninstallRag));
 
   // --- list ---
   program

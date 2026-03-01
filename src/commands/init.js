@@ -108,9 +108,14 @@ export async function initCommand() {
   const content = agent.template(skillsList);
 
   if (existsSync(configPath)) {
-    // Append to existing file
-    await appendFile(configPath, '\n' + content, 'utf-8');
-    log.success(`Updated ${pc.bold(agent.file)} with skill references`);
+    // Check if BoxClaw section already exists
+    const existing = await readFile(configPath, 'utf-8');
+    if (existing.includes('BoxClaw Skills')) {
+      log.info(`${pc.bold(agent.file)} already contains BoxClaw config — skipping`);
+    } else {
+      await appendFile(configPath, '\n' + content, 'utf-8');
+      log.success(`Updated ${pc.bold(agent.file)} with skill references`);
+    }
   } else {
     await writeFile(configPath, content.trimStart(), 'utf-8');
     log.success(`Created ${pc.bold(agent.file)} with skill references`);

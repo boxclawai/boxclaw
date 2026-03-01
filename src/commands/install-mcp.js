@@ -6,7 +6,19 @@ import { log } from '../utils.js';
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { homedir } from 'node:os';
+import { homedir, platform } from 'node:os';
+
+function getClaudeDesktopPath() {
+  const home = homedir();
+  switch (platform()) {
+    case 'darwin':
+      return join(home, 'Library', 'Application Support', 'Claude', 'claude_desktop_config.json');
+    case 'win32':
+      return join(process.env.APPDATA || join(home, 'AppData', 'Roaming'), 'Claude', 'claude_desktop_config.json');
+    default:
+      return join(home, '.config', 'Claude', 'claude_desktop_config.json');
+  }
+}
 
 function findAgentConfig() {
   const cwd = process.cwd();
@@ -24,26 +36,59 @@ function findAgentConfig() {
     return { type: 'claude-code-global', path: claudeGlobal, dir: join(homedir(), '.claude') };
   }
 
-  // Claude Desktop
-  const claudeDesktop = join(
-    homedir(),
-    'Library',
-    'Application Support',
-    'Claude',
-    'claude_desktop_config.json'
-  );
+  // Claude Desktop (cross-platform)
+  const claudeDesktop = getClaudeDesktopPath();
   if (existsSync(claudeDesktop)) {
-    return { type: 'claude-desktop', path: claudeDesktop, dir: join(homedir(), 'Library', 'Application Support', 'Claude') };
+    return { type: 'claude-desktop', path: claudeDesktop, dir: join(claudeDesktop, '..') };
   }
 
   // Default: create Claude Code project config
   return { type: 'claude-code-project', path: claudeProjectConfig, dir: claudeProjectDir, create: true };
 }
 
-async function readJsonFile(path) {
-  if (!existsSync(path)) return {};
-  const data = await readFile(path, 'utf-8');
-  return JSON.parse(data);
+async function readJsonFile(filePath) {
+  if (!existsSync(filePath)) return {};
+  try {
+    const data = await readFile(filePath, 'utf-8');
+    return JSON.parse(data);
+  } catch {
+    throw new Error(`Config file contains invalid JSON: ${filePath}`);
+  }
+}
+
+// Core logic extracted for use by update command (no process.exit)
+export async function installMcpCore(name, info) {
+  const agentConfig = findAgentConfig();
+
+  // Ensure directory exists
+  if (!existsSync(agentConfig.dir)) {
+    await mkdir(agentConfig.dir, { recursive: true });
+  }
+
+  // Read existing config
+  const config = await readJsonFile(agentConfig.path);
+
+  // Add MCP server
+  if (!config.mcpServers) config.mcpServers = {};
+
+  // Replace {PROJECT_DIR} placeholder with actual cwd
+  const args = (info.args || []).map((arg) =>
+    arg.replace('{PROJECT_DIR}', process.cwd())
+  );
+
+  config.mcpServers[name] = {
+    command: info.command,
+    args,
+  };
+
+  if (info.env && Object.keys(info.env).length > 0) {
+    config.mcpServers[name].env = info.env;
+  }
+
+  // Write config
+  await writeFile(agentConfig.path, JSON.stringify(config, null, 2) + '\n', 'utf-8');
+
+  return { agentConfig, args };
 }
 
 export async function installMcp(name, options) {
@@ -70,38 +115,10 @@ export async function installMcp(name, options) {
     process.exit(1);
   }
 
-  // Find agent config file
-  const agentConfig = findAgentConfig();
-  spinner.text = `Configuring ${pc.bold(name)} in ${agentConfig.type}...`;
+  spinner.text = `Configuring ${pc.bold(name)}...`;
 
   try {
-    // Ensure directory exists
-    if (!existsSync(agentConfig.dir)) {
-      await mkdir(agentConfig.dir, { recursive: true });
-    }
-
-    // Read existing config
-    const config = await readJsonFile(agentConfig.path);
-
-    // Add MCP server
-    if (!config.mcpServers) config.mcpServers = {};
-
-    // Replace {PROJECT_DIR} placeholder with actual cwd
-    const args = (info.args || []).map((arg) =>
-      arg.replace('{PROJECT_DIR}', process.cwd())
-    );
-
-    config.mcpServers[name] = {
-      command: info.command,
-      args,
-    };
-
-    if (info.env && Object.keys(info.env).length > 0) {
-      config.mcpServers[name].env = info.env;
-    }
-
-    // Write config
-    await writeFile(agentConfig.path, JSON.stringify(config, null, 2) + '\n', 'utf-8');
+    const { agentConfig, args } = await installMcpCore(name, info);
 
     // Track in manifest
     await addToManifest('mcp', name, info.version || '1.0.0');

@@ -1,7 +1,7 @@
 {
   "name": "boxclaw",
-  "version": "1.0.0",
-  "description": "Install production-grade AI agent skills into any project",
+  "version": "1.1.0",
+  "description": "Install AI agent skills, MCP servers, and RAG templates into any project",
   "type": "module",
   "bin": {
     "boxclaw": "./bin/boxclaw.js"

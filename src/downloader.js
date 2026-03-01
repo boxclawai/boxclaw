@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { pipeline } from 'node:stream/promises';
 import { createWriteStream, readdirSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 
 const TARBALL_URL =
   'https://github.com/boxclawai/skills/archive/refs/heads/main.tar.gz';
@@ -22,12 +22,17 @@ export async function downloadFromTarball(subdir, destDir) {
   // strip-components = 1 (skills-main) + depth of subdir path
   const stripCount = 1 + subdir.split('/').length;
 
-  execSync(
-    `tar -xzf "${tmpFile}" -C "${destDir}" --strip-components=${stripCount} "skills-main/${subdir}/"`,
-    { stdio: 'pipe' }
-  );
-
-  await unlink(tmpFile).catch(() => {});
+  try {
+    // Use execFileSync to avoid shell injection
+    execFileSync('tar', [
+      '-xzf', tmpFile,
+      '-C', destDir,
+      `--strip-components=${stripCount}`,
+      `skills-main/${subdir}/`,
+    ], { stdio: 'pipe' });
+  } finally {
+    await unlink(tmpFile).catch(() => {});
+  }
 
   // Make scripts executable
   const scriptsDir = join(destDir, 'scripts');

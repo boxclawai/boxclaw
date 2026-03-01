@@ -1,4 +1,23 @@
 import pc from 'picocolors';
+import { resolve, sep } from 'node:path';
+
+const VALID_NAME = /^[a-zA-Z0-9][a-zA-Z0-9._-]*$/;
+
+export function validateName(name) {
+  if (!name || !VALID_NAME.test(name)) {
+    throw new Error(
+      `Invalid name "${name}". Names must contain only letters, numbers, hyphens, dots, and underscores.`
+    );
+  }
+}
+
+export function assertPathWithin(childPath, parentPath) {
+  const resolved = resolve(childPath);
+  const parent = resolve(parentPath) + sep;
+  if (!resolved.startsWith(parent)) {
+    throw new Error(`Path "${childPath}" escapes the expected directory`);
+  }
+}
 
 export const log = {
   info: (msg) => console.log(pc.cyan('i') + ' ' + msg),

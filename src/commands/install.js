@@ -6,7 +6,7 @@ import { getItemPath, getTypeDir, addToManifest, isInstalled } from '../config.j
 import { installMcp } from './install-mcp.js';
 import { installRag } from './install-rag.js';
 import { log } from '../utils.js';
-import { mkdir } from 'node:fs/promises';
+import { mkdir, rm } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 
 export async function installSkill(name, options) {
@@ -37,23 +37,24 @@ export async function installSkill(name, options) {
   if (!existsSync(dir)) await mkdir(dir, { recursive: true });
 
   const destDir = getItemPath('skill', name);
-  spinner.text = `Downloading ${info.emoji} ${pc.bold(info.role)}...`;
+  spinner.text = `Downloading ${info.emoji || ''} ${pc.bold(info.role || info.name)}...`;
 
   try {
     await downloadFromTarball(name, destDir);
+    await addToManifest('skill', name, info.version || '1.0.0');
   } catch (err) {
+    // Clean up partial download
+    await rm(destDir, { recursive: true, force: true }).catch(() => {});
     spinner.fail('Download failed');
     log.error(err.message);
     process.exit(1);
   }
 
-  await addToManifest('skill', name, info.version || '1.0.0');
-
-  spinner.succeed(`Installed ${info.emoji} ${pc.bold(info.role)}`);
+  spinner.succeed(`Installed ${info.emoji || ''} ${pc.bold(info.role || info.name)}`);
   console.log('');
   log.dim(`  Location:    .skills/${name}/`);
-  log.dim(`  References:  ${info.refs} document${info.refs !== 1 ? 's' : ''}`);
-  log.dim(`  Scripts:     ${info.scripts} script${info.scripts !== 1 ? 's' : ''}`);
+  log.dim(`  References:  ${info.refs ?? 0} document${(info.refs ?? 0) !== 1 ? 's' : ''}`);
+  log.dim(`  Scripts:     ${info.scripts ?? 0} script${(info.scripts ?? 0) !== 1 ? 's' : ''}`);
   console.log('');
   log.info(`Read the skill: ${pc.underline(`.skills/${name}/SKILL.md`)}`);
 }

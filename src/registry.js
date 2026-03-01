@@ -23,28 +23,30 @@ export async function fetchRegistry(type = 'skill') {
   return cache[type];
 }
 
+function getCollection(registry) {
+  return registry.skills || registry.servers || registry.templates || {};
+}
+
 export async function getItemNames(type = 'skill') {
   const registry = await fetchRegistry(type);
-  const collection = registry.skills || registry.servers || registry.templates;
-  return Object.keys(collection);
+  return Object.keys(getCollection(registry));
 }
 
 export async function getItemInfo(type, name) {
   const registry = await fetchRegistry(type);
-  const collection = registry.skills || registry.servers || registry.templates;
-  return collection[name] || null;
+  return getCollection(registry)[name] || null;
 }
 
 export async function searchItems(type, query) {
   const registry = await fetchRegistry(type);
-  const collection = registry.skills || registry.servers || registry.templates;
+  const collection = getCollection(registry);
   const q = query.toLowerCase();
 
   return Object.values(collection).filter((item) => {
     return (
-      item.name.toLowerCase().includes(q) ||
-      (item.role || item.description || '').toLowerCase().includes(q) ||
-      item.description.toLowerCase().includes(q) ||
+      (item.name || '').toLowerCase().includes(q) ||
+      (item.role || '').toLowerCase().includes(q) ||
+      (item.description || '').toLowerCase().includes(q) ||
       (item.tags || []).some((t) => t.toLowerCase().includes(q))
     );
   });
